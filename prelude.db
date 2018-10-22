@@ -1,6 +1,6 @@
 export let  foo : Int  be 0 in
 
-export let  fac : Int  be 
+export let fac be 
 
     \  n : Int  -> 
 
