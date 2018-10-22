@@ -33,7 +33,12 @@ aExpression = buildExpressionParser aOperations aTerm
 types =
     do { reserved "Int"; return INT_;} <|>
     do { reserved "Bool"; return BOOL_;} <|>
-    do { reserved "String"; return STRING_;} 
+    do { reserved "String"; return STRING_;} <|>
+    do { 
+        t1 <- types;
+        reserved "->";
+        t2 <- types;
+        return $ FUNC t1 t2;}
 
 
 guard_ :: Parser EXPR
@@ -51,7 +56,7 @@ subguard =
 final :: Parser EXPR
 final = 
         do { reserved "|";
-             reserved "_";
+             reserved "elsewhere";
              reserved "->";
              esp;} 
 

@@ -6,7 +6,7 @@ export let fac be
 
         | n is 0  -> 1
         | n is 1 -> 1
-        | _ -> n * ( fac $ ( (- 1) + n ) ) 
+        | elsewhere -> n * ( fac $ ( (- 1) + n ) ) 
 
 in
 
