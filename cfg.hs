@@ -12,7 +12,7 @@ data Kind =
 data Type = INT_
     | BOOL_
     | STRING_ 
-    | FUNC EXPR EXPR
+    | FUNC Type Type
     | PROD EXPR EXPR
     | SUM EXPR EXPR
     | ASSUME
