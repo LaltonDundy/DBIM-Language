@@ -14,7 +14,7 @@ In DBIM all computation and declarations are written in a purely functional/decl
 
 ### Here is an example module in the Pi-Script:
 
-```ocaml
+```
 export let  foo : Int   be 0 in
 
 export let fac : ( Int -> Int )   be 
