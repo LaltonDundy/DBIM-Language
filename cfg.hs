@@ -12,7 +12,7 @@ data Kind =
 data Type = INT_
     | BOOL_
     | STRING_ 
-    | FUNC Type Type
+    | FUNC EXPR EXPR
     | PROD EXPR EXPR
     | SUM EXPR EXPR
     | ASSUME
@@ -24,18 +24,18 @@ data  VAL =   CLOSURE (String, EXPR, Environment )
             | STRING Text
             | PAIR VAL VAL
             | EITHER VAL VAL
-            | TYPE Type
             | UNIT
                 deriving (Show, Eq)
 
 type Environment = [ ( String , EXPR) ] 
 
 data EXPR = Val VAL
+            | TYPE Type
 
-            | LET (String,Type) EXPR EXPR 
+            | LET (String, EXPR) EXPR EXPR 
             | ID String
             | APP EXPR EXPR
-            | LAMBDA (String,Type) EXPR
+            | LAMBDA (String,EXPR) EXPR
             | IF EXPR EXPR EXPR
 
             | ENV Environment
@@ -47,7 +47,7 @@ data EXPR = Val VAL
             | NEG EXPR
             | ADD EXPR EXPR 
             | MULT EXPR EXPR
-            | TYPED EXPR Type
+            | TYPED EXPR EXPR
 
             deriving (Show, Eq)
 

@@ -29,5 +29,5 @@ apply modul str  ex2 =
                                     Just e -> e
                                     Nothing -> error "apply did not work"  
                         in
-                        LET (str,ASSUME) v   (APP (ID str) ex2)
+                        LET (str,TYPE ASSUME) v   (APP (ID str) ex2)
 

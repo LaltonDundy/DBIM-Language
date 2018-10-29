@@ -31,14 +31,16 @@ aTerm =  liftM (Val . INT . fromIntegral ) integer_
 aExpression = buildExpressionParser aOperations aTerm
 
 types =
-    do { reserved "Int"; return INT_;} <|>
-    do { reserved "Bool"; return BOOL_;} <|>
-    do { reserved "String"; return STRING_;} <|>
-    do { 
-        t1 <- types;
-        reserved "->";
-        t2 <- types;
-        return $ FUNC t1 t2;}
+      do { 
+            reserved "(";
+            t1 <- types;
+            reserved "->";
+            t2 <- types;
+            reserved ")";
+            return . TYPE $ FUNC t1 t2;} <|>
+    do { reserved "Int"; return . TYPE $ INT_;} <|>
+    do { reserved "Bool"; return  . TYPE $ BOOL_;} <|>
+    do { reserved "String"; return . TYPE $ STRING_;} 
 
 
 guard_ :: Parser EXPR
@@ -70,7 +72,7 @@ typed_val =
 untyped_val  = 
     do {
         str <- identifier;
-        return (str, ASSUME); }
+        return (str,  TYPE ASSUME); }
 
 get_id = try typed_val <|> untyped_val 
 

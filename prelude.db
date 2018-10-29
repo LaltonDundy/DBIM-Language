@@ -1,6 +1,6 @@
-export let  foo : Int  be 0 in
+export let  foo : Int   be 0 in
 
-export let fac be 
+export let fac : ( Int -> Int )   be 
 
     \  n : Int  -> 
 
@@ -11,4 +11,3 @@ export let fac be
 in
 
 module Prelude
-
