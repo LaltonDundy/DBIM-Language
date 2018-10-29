@@ -14,7 +14,7 @@ In DBIM all computation and declarations are written in a purely functional/decl
 
 ### Here is an example module in the Pi-Script:
 
-'''
+```
 export let  foo : Int   be 0 in
 
 export let fac : ( Int -> Int )   be 
@@ -28,7 +28,7 @@ export let fac : ( Int -> Int )   be
 in
 
 module Prelude
-'''
+```
 
 ### Now here is the Pi-Script calling fac from said module
 
@@ -43,7 +43,7 @@ Main:
     print (fac  4);
 
 End
-'''
+```
 
 ### Currently in Developement
 DBIM was started recently and still needs much more facilites and testing
