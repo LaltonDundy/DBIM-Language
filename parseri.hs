@@ -15,52 +15,39 @@ whileParserI :: Parser Stmnt
 whileParserI = whiteSpace >> ( (try def) <|>  m )
 
 def =
-    do {
-        str <- identifier;
+    do {str <- identifier;
         reserved ":";
         s <- stmnts;
         s2 <- try m <|> def;
-        return $ LST (DEF str s) s2
-    }
+        return $ LST (DEF str s) s2;}
 
 
 m =
-    do {
-        reserved "Main";
+    do {reserved "Main";
         reserved ":";
         s <- stmnts;
-        return $ LST START s;
-    }
+        return $ LST START s;}
 
 stmnts = try $ do { reserved "End"; return RETURN; } <|>
-    do {
-        s1 <- stmnt;
+    do {s1 <- stmnt;
         reserved ";";
         s2 <- stmnts;
-        return $ LST s1 s2 ;
-    }
+        return $ LST s1 s2;}
 
 stmnt =
     do{ reserved "open";
         str <- identifier;
-        return $ OPEN str
-    } <|>
-    do {
-        reserved "!";
+        return $ OPEN str;} <|>
+    do {reserved "!";
         str <- identifier;
-        return $ CALL str
-    } <|>
-    do {
-        reserved "print";
+        return $ CALL str;} <|>
+    do {reserved "print";
         e <- iexpr;
-        return $ PRINT e;
-    }<|> 
-    do {
-        str <- identifier;
+        return $ PRINT e;}<|> 
+    do {str <- identifier;
         reserved ":=";
         e <- iexpr;
-        return $ ASSIGN str e;
-    } 
+        return $ ASSIGN str e;} 
 
 iexpr = parens iexpr 
         <|> do { liftM (Value . INT. fromIntegral ) integer_;}
