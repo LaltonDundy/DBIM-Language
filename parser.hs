@@ -13,9 +13,8 @@ import qualified Text.ParserCombinators.Parsec.Token as Token
 aOperations = [
 
         [Infix (reservedOp "$" >> return APP) AssocLeft ] ,
-        [Prefix (reservedOp "-" >> return NEG) ] , 
         [Infix  (reservedOp "*"   >> return MULT) AssocLeft ],
-        [Infix  (reservedOp "+"   >> return ADD) AssocLeft ],
+        [Infix  (reservedOp "+"   >> return ADD) AssocLeft , Infix  (reservedOp "-"   >> return SUB) AssocLeft ],
         [Infix  (reservedOp "is"   >> return EQL) AssocLeft ]
 
                 ]

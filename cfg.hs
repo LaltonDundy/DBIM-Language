@@ -46,6 +46,7 @@ data EXPR = Val VAL
 
             | NEG EXPR
             | ADD EXPR EXPR 
+            | SUB EXPR EXPR 
             | MULT EXPR EXPR
             | TYPED EXPR EXPR
 

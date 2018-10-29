@@ -21,9 +21,8 @@ export let fac : ( Int -> Int )   be
 
     \  n : Int  -> 
 
-        | n is 0  -> 1
-        | n is 1 -> 1
-        | elsewhere -> n * ( fac $ ( (- 1) + n ) ) 
+        if n is 1 then  1
+        else n * ( fac $  (n - 1)  ) 
 
 in
 

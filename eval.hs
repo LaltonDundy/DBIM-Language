@@ -64,6 +64,9 @@ eval env expr =
         ADD ( Val ( INT v1 )) ( Val ( INT v2 )) -> Val $ INT ( v1 + v2 ) 
         ADD  expr1  expr2  -> eval env $ ADD ( eval env expr1 ) ( eval env expr2 )
 
+        SUB ( Val ( INT v1 )) ( Val ( INT v2 )) -> Val $ INT ( v1 - v2 ) 
+        SUB  expr1  expr2  -> eval env $ SUB ( eval env expr1 ) ( eval env expr2 )
+
         MULT ( Val ( INT v1 )) ( Val ( INT v2 )) -> Val $ INT ( v1 * v2 ) 
         MULT  expr1  expr2  -> eval env $ MULT ( eval env expr1 ) ( eval env expr2 )
 
