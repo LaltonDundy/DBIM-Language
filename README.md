@@ -54,5 +54,7 @@ DBIM was started recently and still needs much more facilites and testing
 ### Future/current goals
 * Complete Dependent typing
 * Declarativly defined classes for objects
+* Functors over modules
+* pi-calculus based conccurency model for the pi-calculus
 
 
