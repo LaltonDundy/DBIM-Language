@@ -12,7 +12,7 @@ DBIM takes this observation seriously and decides to organize its program struct
 
 In DBIM all computation and declarations are written in a purely functional/declarative language called the Lambda-Script. The other language in DBIM, Pi-Script, is a procedural language that calls these functions and objects for effectful interaction.
 
-### Here is an example module in the Pi-Script:
+### Here is an example module in the Lambda-Script:
 
 ```
 export let  foo : Int   be 0 in
