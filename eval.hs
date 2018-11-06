@@ -14,7 +14,7 @@ eval env expr =
 
      case expr of
 
-        (TYPED v t) -> v
+        Val (PAIR e1 e2) -> Val $ PAIR (eval env e1) (eval env e2)
 
         Val v -> Val v
 
@@ -22,6 +22,9 @@ eval env expr =
                             where  other  = case (eval env rest) of 
                                                     (ENV lst) -> (lst :: [ ( String, EXPR ) ] )
 
+        COLLECT (LET_TYP (str,typ) e1 e2) rest -> ENV $  [(str, e1) ]  ++ other
+                            where  other  = case (eval env rest) of 
+                                                    (ENV lst) -> (lst :: [ ( String, EXPR ) ] )
         MOD_NAME -> ENV []
 
         IF expr1 expr2 expr3 ->
@@ -47,6 +50,8 @@ eval env expr =
 
                         )
 
+        LET_TYP _ _ body -> eval env body
+
         LET (str,_) expr1 expr2 -> eval ((str, val) : env) expr2
                 where val =  eval ( (str, recur) : env ) expr1
                       recur =  eval ( (str, val) : env ) expr1
@@ -68,6 +73,13 @@ eval env expr =
         SUB  expr1  expr2  -> eval env $ SUB ( eval env expr1 ) ( eval env expr2 )
 
         MULT ( Val ( INT v1 )) ( Val ( INT v2 )) -> Val $ INT ( v1 * v2 ) 
-        MULT  expr1  expr2  -> eval env $ MULT ( eval env expr1 ) ( eval env expr2 )
+
+        MULT  expr1  expr2  ->  let first = eval env expr1 in
+                                    if first  == Val (INT 0) then first else
+                                    eval env $ MULT first  ( eval env expr2 )
+
+        FST ( Val (PAIR e1 e2) ) -> eval env e1
+        SND ( Val (PAIR e1 e2) ) -> eval env e2
+        SWAP (Val (PAIR e1 e2) ) -> eval env $ Val (PAIR e2 e1)
 
         e -> error $ "Eval case not written: " ++ (show e)

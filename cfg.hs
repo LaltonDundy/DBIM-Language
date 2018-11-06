@@ -3,6 +3,7 @@
 module CFG where 
 
 import Data.Text
+import Data.Int (Int64)
 
 data Kind = 
       KIND 
@@ -12,18 +13,22 @@ data Kind =
 data Type = INT_
     | BOOL_
     | STRING_ 
+    | CUSTOM String
     | FUNC EXPR EXPR
     | PROD EXPR EXPR
-    | SUM EXPR EXPR
+    | SUM [EXPR]
+    | TAGGED_TYP String EXPR
+    | REF_TYPE String
     | ASSUME
         deriving (Show, Eq)
 
 data  VAL =   CLOSURE (String, EXPR, Environment )  
             | BOOL Bool
-            | INT Int 
+            | INT Int64 
+            | ATOM Text
             | STRING Text
-            | PAIR VAL VAL
-            | EITHER VAL VAL
+            | PAIR EXPR EXPR
+            | TAGGED String EXPR
             | UNIT
                 deriving (Show, Eq)
 
@@ -31,6 +36,8 @@ type Environment = [ ( String , EXPR) ]
 
 data EXPR = Val VAL
             | TYPE Type
+            | KIN Kind
+            | LET_TYP (String, EXPR) EXPR EXPR 
 
             | LET (String, EXPR) EXPR EXPR 
             | ID String
@@ -43,6 +50,10 @@ data EXPR = Val VAL
             | MOD_NAME
 
             | EQL EXPR EXPR
+
+            | FST EXPR
+            | SND EXPR
+            | SWAP EXPR
 
             | NEG EXPR
             | ADD EXPR EXPR 

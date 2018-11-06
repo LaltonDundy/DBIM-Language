@@ -3,18 +3,28 @@ module TypeCheck where
 
 import CFG
 import Eval
+import Data.Maybe
 
 
 typeCheck :: Environment -> EXPR -> EXPR 
 typeCheck env expr = case expr of
 
-    TYPED _  (TYPE t) ->  TYPE t
+    Val (PAIR lft rgt) -> TYPE $ PROD (typeCheck env lft) (typeCheck env rgt)
 
     Val (INT _ ) ->  TYPE INT_ 
 
     Val (BOOL _) ->  TYPE BOOL_ 
 
     Val (STRING _) -> TYPE STRING_
+
+    LET_TYP (str, typ) es1 es2 ->  
+                        LET (str, typ) (typeCheck newEnv es1) (typeCheck newEnv es2)
+                            where newEnv = (str,  typ) : env
+
+    LET (str, TYPE (REF_TYPE typ)) es1 es2 ->  eval env $
+
+            LET (str, ref) es1 es2 
+                where ref = fromJust $ lookup_ env typ
 
     LET (str, typ) es1 es2 ->  
                         LET (str, typ) (typeCheck newEnv es1) (typeCheck newEnv es2)
@@ -24,6 +34,7 @@ typeCheck env expr = case expr of
                 Just v-> v
                 Nothing ->  (TYPE ASSUME)
 
+
     APP es1 es2 -> case (typeCheck env es1) of
 
          TYPE ASSUME ->  TYPE ASSUME
@@ -31,7 +42,9 @@ typeCheck env expr = case expr of
          TYPE (FUNC t1 t2) -> if ((typeCheck env es2) /=  t1)
                                     then error "Wrong typing function Application"
                                     else  t2
-         _ -> error "Not function argument"
+         ID str ->  typeCheck env $ APP (typeCheck env es1) es2
+
+         v -> error $  "Not function argument: " ++ (show v)
 
     LAMBDA (str, typ) es -> let newEnv = (str, typ) : env in
                                       TYPE $ FUNC typ (typeCheck newEnv es)
@@ -60,7 +73,7 @@ typeCheck env expr = case expr of
                       ( (typeCheck env es1) /= ( TYPE ASSUME) ) &&
                       ( (typeCheck env es2) /= ( TYPE ASSUME) ) then
 
-                       error "Types not equal"
+                       error $ "Types not equal: " ++ ( show $ typeCheck env es1 ) ++ " " ++ ( show $ typeCheck env es2 )
                    else TYPE BOOL_
 
     NEG es -> if (typeCheck env es) /= (TYPE INT_) &&
@@ -76,6 +89,13 @@ typeCheck env expr = case expr of
                                 error "Expected Int"
                     else  TYPE INT_
 
+    SUB es1 es2 ->   if (typeCheck env es1) /= ( TYPE INT_) &&
+                        (typeCheck env es1) /= ( TYPE ASSUME) then 
+                                error "Expected Int"
+                    else if (typeCheck env es2) /= ( TYPE INT_ ) &&
+                            (typeCheck env es2) /= ( TYPE ASSUME) then 
+                                error "Expected Int"
+                    else  TYPE INT_
     MULT es1 es2 ->   if (typeCheck env es1) /= (  TYPE INT_) &&
                         (typeCheck env es1) /= ( TYPE ASSUME) then 
                                 error "Expected Int"
@@ -83,5 +103,7 @@ typeCheck env expr = case expr of
                             (typeCheck env es2) /= ( TYPE ASSUME) then 
                                 error "Expected Int"
                     else  TYPE INT_
+
+    TYPE _  -> KIN  KIND
 
     rest -> error  $ "Untypable: " ++ ( show rest)

@@ -17,7 +17,7 @@ In DBIM all computation and declarations are written in a purely functional/decl
 ```
 export let  foo : Int   be 0 in
 
-export let fac : ( Int -> Int )   be 
+export let fac : ( Int => Int )   be 
 
     \  n : Int  -> 
 

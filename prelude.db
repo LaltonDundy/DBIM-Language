@@ -1,6 +1,14 @@
 export let  foo : Int   be 0 in
 
-export let fac : ( Int -> Int )   be 
+export let fun be ( Int => Int ) in
+
+export let add : ( Int => ( Int => Int ) ) be
+    \ n1 : Int ->
+    \ n2 : Int -> 
+        n1 + n2
+in
+
+export let fac : fun  be 
 
     \  n : Int  -> 
 
@@ -8,5 +16,7 @@ export let fac : ( Int -> Int )   be
         else n * ( fac $  (n - 1)  ) 
 
 in
+
+export let tup be Pair 1 2 in
 
 module Prelude

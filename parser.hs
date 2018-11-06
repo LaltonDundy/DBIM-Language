@@ -11,7 +11,7 @@ import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
 
 aOperations = [
-
+        [Infix (reservedOp "=>" >> return (\x y -> TYPE $ FUNC x y)) AssocLeft ] ,
         [Infix (reservedOp "$" >> return APP) AssocLeft ] ,
         [Infix  (reservedOp "*"   >> return MULT) AssocLeft ],
         [Infix  (reservedOp "+"   >> return ADD) AssocLeft , Infix  (reservedOp "-"   >> return SUB) AssocLeft ],
@@ -19,7 +19,13 @@ aOperations = [
 
                 ]
 
-aTerm =  liftM (Val . INT . fromIntegral ) integer_
+aTerm =     
+                types
+            <|> do {reserved "Pair";
+                    lft <- aTerm;
+                    rgt <- aTerm;
+                    return . Val $ PAIR lft rgt;}
+            <|>     liftM (Val . INT . fromIntegral ) integer_
             <|>  do { reserved "True" ;  return . Val $  (BOOL True) ; }
             <|>  do { reserved "False" ;  return . Val $  (BOOL False) ; }
             <|>  do { str <- identifier;
@@ -30,13 +36,6 @@ aTerm =  liftM (Val . INT . fromIntegral ) integer_
 aExpression = buildExpressionParser aOperations aTerm
 
 types =
-      do { 
-            reserved "(";
-            t1 <- types;
-            reserved "->";
-            t2 <- types;
-            reserved ")";
-            return . TYPE $ FUNC t1 t2;} <|>
     do { reserved "Int"; return . TYPE $ INT_;} <|>
     do { reserved "Bool"; return  . TYPE $ BOOL_;} <|>
     do { reserved "String"; return . TYPE $ STRING_;} 
@@ -65,7 +64,7 @@ typed_val =
     do {
         str <- identifier;
         reserved ":";
-        typ <- types;
+        typ <- aExpression;
         return (str, typ); } 
 
 untyped_val  = 
@@ -86,6 +85,13 @@ maybe_ex = try end <|> export
 
 esp_or_ex = try export <|> esp
 
+let_type_ex = 
+             do { reserved "let";
+                  (str,typ) <- get_id;
+                  reserved "be";
+                  e1 <- types;
+                  reserved "in";
+                  return $ LET (str,typ) e1 (ENV [(str,e1)]); }
 let_of_ex =
             do {  reserved "let";
                   (str,typ) <- get_id;
@@ -109,10 +115,16 @@ end =
                 return MOD_NAME; }
 
 export =
-         do { reserved "export";
-              let_ <- let_of_ex;
+         reserved "export" >> (
+---         try $
+---        do {let_ <- let_type_ex ;
+---           e <- maybe_ex;
+---           return $ COLLECT let_ e;}
+---             <|>
+           do{let_ <- let_of_ex;
               e <- maybe_ex;
               return $ COLLECT let_ e;}
+                                )
 
 if_else =
             do {
@@ -129,7 +141,10 @@ esp =
 
          guard_
         <|> lambda 
+        <|> (reserved "type" >> types)
+        <|> lett
         <|> if_else     
+        <|> parens esp
         <|> aExpression
         <|> aTerm
 
