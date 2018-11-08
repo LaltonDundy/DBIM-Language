@@ -9,7 +9,7 @@ lookup_ ((s,v) : sx) ident = if s == ident then (Just v)
 lookup_ [] ident = Nothing
 
 
-eval ::   Environment -> EXPR -> EXPR
+eval :: Environment -> EXPR -> EXPR
 eval env expr =
 
      case expr of
@@ -63,6 +63,7 @@ eval env expr =
         EQL (Val v1) (Val v2) -> Val . BOOL $ v1 == v2
         EQL espr1 espr2 -> eval env $ EQL (eval env espr1) (eval env espr2)
 
+        NEG (NEG expr) -> eval env $ expr
         NEG ( Val ( INT v1 ) ) -> Val ( INT (- v1) )
         NEG expr -> eval env $ NEG $ eval env expr
 
@@ -79,7 +80,10 @@ eval env expr =
                                     eval env $ MULT first  ( eval env expr2 )
 
         FST ( Val (PAIR e1 e2) ) -> eval env e1
+        FST ( ID str ) -> eval env $ FST (eval env (ID str)) 
         SND ( Val (PAIR e1 e2) ) -> eval env e2
+        SND ( ID str ) -> eval env $ SND (eval env (ID str)) 
         SWAP (Val (PAIR e1 e2) ) -> eval env $ Val (PAIR e2 e1)
+        SWAP ( ID str ) -> eval env $ SWAP (eval env (ID str)) 
 
         e -> error $ "Eval case not written: " ++ (show e)

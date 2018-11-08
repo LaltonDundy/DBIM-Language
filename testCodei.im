@@ -6,5 +6,6 @@ Main:
     print (fac  2);
     print (fac  3);
     print (fac  4);
+    print (head [ 1 , 2 , 3 , 4 , ]);
 
 End

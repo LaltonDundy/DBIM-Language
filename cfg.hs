@@ -16,7 +16,7 @@ data Type = INT_
     | CUSTOM String
     | FUNC EXPR EXPR
     | PROD EXPR EXPR
-    | SUM [EXPR]
+    | SUM EXPR EXPR
     | TAGGED_TYP String EXPR
     | REF_TYPE String
     | ASSUME

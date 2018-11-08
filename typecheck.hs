@@ -11,6 +11,18 @@ typeCheck env expr = case expr of
 
     Val (PAIR lft rgt) -> TYPE $ PROD (typeCheck env lft) (typeCheck env rgt)
 
+    FST (Val (PAIR lft rgt)) ->  typeCheck env lft
+    FST (ID str) -> typeCheck env $ FST $ fromJust $ lookup_ env str
+    FST v -> error $ "Not Product type: " ++ (show v)
+
+    SND ( Val (PAIR lft rgt)) -> typeCheck env rgt
+    SND (ID str) -> typeCheck env $ SND $ fromJust $ lookup_ env str
+    SND v -> error $ "Not Product type: " ++ (show v)
+
+    SWAP ( Val (PAIR lft rgt)) -> typeCheck env $ Val $ PAIR rgt lft
+    SWAP (ID str) -> typeCheck env $ SWAP $ fromJust $  lookup_ env str
+    SWAP v -> error $ "Not Product type: " ++ (show v)
+
     Val (INT _ ) ->  TYPE INT_ 
 
     Val (BOOL _) ->  TYPE BOOL_ 

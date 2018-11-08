@@ -114,16 +114,4 @@ eval_exp expr refer = case expr of
 
      _ -> error "too be written"
 
-iexprToExpr :: [(String, IEXPR)] -> IEXPR -> EXPR
-iexprToExpr refer espr = case espr of
-    (Value v) -> Val v
-    (REF str) -> case lookup_ refer str of
-                    Just (Value e)  -> Val  e
-                    Nothing -> error " Not foreign object" 
-    _ -> error "Not convertable to expr"
 
-exprToIexpr :: [(String, IEXPR)] -> EXPR -> IEXPR
-exprToIexpr refer espr = case espr of
-    (TYPED (Val v) _ ) -> Value v
-    Val v -> Value v
-    v -> exprToIexpr refer $ eval [] v

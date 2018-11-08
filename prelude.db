@@ -1,11 +1,28 @@
 export let  foo : Int   be 0 in
 
-export let fun be ( Int => Int ) in
+export let fun be (Int => Int) in
 
-export let add : ( Int => ( Int => Int ) ) be
+export let List : (TYPE => TYPE)  be 
+
+    \ a : TYPE ->
+
+     @ Nothing ? ( a , (List $ a ) )
+
+in
+
+export let vector be (List $ Int) in
+
+export let add : (Int => (Int => Int)) be
+
     \ n1 : Int ->
     \ n2 : Int -> 
         n1 + n2
+in
+
+export let head be 
+
+    \ lst : (List $ Int) ->
+          ^ lst
 in
 
 export let fac : fun  be 
@@ -13,7 +30,7 @@ export let fac : fun  be
     \  n : Int  -> 
 
         if n is 1 then  1
-        else n * ( fac $  (n - 1)  ) 
+        else n * ( fac $ (n - 1)  ) 
 
 in
 

@@ -4,6 +4,7 @@ module ParserI where
 import AST
 import CFG
 import Lexer 
+import Utils
 import System.IO
 import Control.Monad
 import Text.ParserCombinators.Parsec
@@ -49,7 +50,16 @@ stmnt =
         e <- iexpr;
         return $ ASSIGN str e;} 
 
+lst =  (reserved "]" >> return []) <|>
+        do { hd <- iexpr;
+            reserved ",";
+            rest <- lst;
+            return $ hd :  rest;}
+
 iexpr = parens iexpr 
+        <|> do {reserved "[";
+                l <- lst;
+                return . LSTV $ l; }
         <|> do { liftM (Value . INT. fromIntegral ) integer_;}
         <|> do { str <- identifier; 
                  e <- iexpr;

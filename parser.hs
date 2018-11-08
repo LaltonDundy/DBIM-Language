@@ -11,9 +11,13 @@ import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
 
 aOperations = [
-        [Infix (reservedOp "=>" >> return (\x y -> TYPE $ FUNC x y)) AssocLeft ] ,
+        [Infix (reservedOp "=>" >>return  (\x y -> TYPE $ FUNC x y)) AssocRight ] ,
+        [Infix (reservedOp "?" >> return  (\x y -> TYPE $ SUM  x y)) AssocLeft ] ,
+        [Infix (reservedOp "," >> return  (\x y -> TYPE $ PROD x y)) AssocLeft ] ,
         [Infix (reservedOp "$" >> return APP) AssocLeft ] ,
+        [Infix (reservedOp "|>" >> return (\ x y -> APP y x)) AssocLeft ] ,
         [Infix  (reservedOp "*"   >> return MULT) AssocLeft ],
+        [Prefix  (reservedOp "^"   >> return FST) ],
         [Infix  (reservedOp "+"   >> return ADD) AssocLeft , Infix  (reservedOp "-"   >> return SUB) AssocLeft ],
         [Infix  (reservedOp "is"   >> return EQL) AssocLeft ]
 
@@ -28,6 +32,9 @@ aTerm =
             <|>     liftM (Val . INT . fromIntegral ) integer_
             <|>  do { reserved "True" ;  return . Val $  (BOOL True) ; }
             <|>  do { reserved "False" ;  return . Val $  (BOOL False) ; }
+            <|>do {reserved "@";
+                atm <- identifier;
+                return . TYPE . CUSTOM $ atm;} 
             <|>  do { str <- identifier;
                       return $ ID str; }
             <|> parens esp
@@ -37,8 +44,17 @@ aExpression = buildExpressionParser aOperations aTerm
 
 types =
     do { reserved "Int"; return . TYPE $ INT_;} <|>
+    do { reserved "TYPE"; return . KIN $ KIND;} <|>
     do { reserved "Bool"; return  . TYPE $ BOOL_;} <|>
-    do { reserved "String"; return . TYPE $ STRING_;} 
+    do { reserved "String"; return . TYPE $ STRING_;} <|>
+    do {reserved "@";
+        atm <- identifier;
+        return . TYPE . CUSTOM $ atm;} <|>
+    do {reserved "'";
+        tag <- identifier;
+        typ <- aExpression;
+        return . TYPE $ TAGGED_TYP tag typ; }
+
 
 
 guard_ :: Parser EXPR

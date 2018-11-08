@@ -31,3 +31,23 @@ apply modul str  ex2 =
                         in
                         LET (str,TYPE ASSUME) v   (APP (ID str) ex2)
 
+iexprToExpr :: [(String, IEXPR)] -> IEXPR -> EXPR
+iexprToExpr refer espr = case espr of
+    (Value v) -> Val v
+    (REF str) -> case lookup_ refer str of
+                    Just (Value e)  -> Val  e
+                    Nothing -> error " Not foreign object" 
+    LSTV [] ->TYPE $ CUSTOM "Nothing"
+    LSTV (x:xs) -> Val $ PAIR (iexprToExpr refer x) (iexprToExpr refer $ LSTV xs)
+
+    _ -> error "Not convertable to expr"
+
+exprToIexpr :: [(String, IEXPR)] -> EXPR -> IEXPR
+exprToIexpr refer espr = case espr of
+    (TYPED (Val v) _ ) -> Value v
+    Val ( PAIR x y ) -> LSTV $ (exprToIexpr refer x) : rest
+                            where rest = case ( exprToIexpr refer y ) of
+                                            LSTV ls -> ls
+                                            _ -> [] 
+    Val v -> Value v
+    v -> exprToIexpr refer $ eval [] v

@@ -25,6 +25,7 @@ data IEXPR =
     | ADD IEXPR IEXPR
     | EQL 
     | ST Stmnt
+    | LSTV [IEXPR]
     | MOD String Environment
         deriving (Show)
 
