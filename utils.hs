@@ -37,7 +37,7 @@ iexprToExpr refer espr = case espr of
     (REF str) -> case lookup_ refer str of
                     Just (Value e)  -> Val  e
                     Nothing -> error " Not foreign object" 
-    LSTV [] ->TYPE $ CUSTOM "Nothing"
+    LSTV [] ->TYPE $ CUSTOM "END"
     LSTV (x:xs) -> Val $ PAIR (iexprToExpr refer x) (iexprToExpr refer $ LSTV xs)
 
     _ -> error "Not convertable to expr"

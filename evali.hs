@@ -90,14 +90,18 @@ eval_exp expr refer = case expr of
             let mods = 
                         filter (\x -> case x of 
                                         MOD _ _ -> True
-                                        _ -> False) ( map snd  refer)
+                                        _       -> False)
+                               (map snd refer)
                 in
 
-            let mod_find [] = Nothing in
-            let mod_find ((MOD s x):xs) =
-                        case lookup_ x str of
-                            Just v -> Just $ MOD s x
-                            Nothing -> mod_find xs
+            let mod_find lst = case lst of 
+
+                    [] -> Nothing 
+                    ((MOD s x):xs) ->
+                                case lookup_ x str of
+                                    Just v -> Just $ MOD s x
+                                    Nothing -> mod_find xs 
+
             in
             let found_mod = case mod_find mods  of
                                 Just (MOD s x) -> x
@@ -111,6 +115,8 @@ eval_exp expr refer = case expr of
                     Nothing -> error "Not defined"
 
      Value v -> Value  v
+
+     LSTV lst -> LSTV (map (\x -> eval_exp x refer ) lst)
 
      _ -> error "too be written"
 

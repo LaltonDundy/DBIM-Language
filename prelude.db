@@ -1,12 +1,12 @@
 export let  foo : Int   be 0 in
 
-export let fun be (Int => Int) in
+export let Fun be (Int => Int) in
 
 export let List : (TYPE => TYPE)  be 
 
     \ a : TYPE ->
 
-     @ Nothing ? ( a , (List $ a ) )
+     @ END ? ( a , (List $ a ) )
 
 in
 
@@ -21,11 +21,21 @@ in
 
 export let head be 
 
-    \ lst : (List $ Int) ->
-          ^ lst
+    \ a : TYPE ->
+    \ lst : (List $ a) ->
+        fst lst
+
 in
 
-export let fac : fun  be 
+export let tail be 
+
+    \ a : TYPE ->
+    \ lst : (List $ a) ->
+        snd lst
+
+in
+
+export let fac : Fun  be 
 
     \  n : Int  -> 
 

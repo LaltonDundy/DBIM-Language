@@ -17,7 +17,8 @@ aOperations = [
         [Infix (reservedOp "$" >> return APP) AssocLeft ] ,
         [Infix (reservedOp "|>" >> return (\ x y -> APP y x)) AssocLeft ] ,
         [Infix  (reservedOp "*"   >> return MULT) AssocLeft ],
-        [Prefix  (reservedOp "^"   >> return FST) ],
+        [Prefix  (reservedOp "fst"   >> return FST) ],
+        [Prefix  (reservedOp "snd"   >> return FST) ],
         [Infix  (reservedOp "+"   >> return ADD) AssocLeft , Infix  (reservedOp "-"   >> return SUB) AssocLeft ],
         [Infix  (reservedOp "is"   >> return EQL) AssocLeft ]
 

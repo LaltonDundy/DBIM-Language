@@ -46,22 +46,23 @@ stmnt =
         e <- iexpr;
         return $ PRINT e;}<|> 
     do {str <- identifier;
-        reserved ":=";
+        reserved "<-";
         e <- iexpr;
         return $ ASSIGN str e;} 
 
-lst =  (reserved "]" >> return []) <|>
-        do { hd <- iexpr;
-            reserved ",";
+lst = (try $ do{ hd <- iexpr; rest <- lst; return $ hd : rest } ) <|>
+        do {reserved ",";
+            hd <- iexpr;
             rest <- lst;
-            return $ hd :  rest;}
+            return $ hd :  rest;} <|> return [] 
 
 iexpr = parens iexpr 
         <|> do {reserved "[";
                 l <- lst;
+                reserved "]";
                 return . LSTV $ l; }
         <|> do { liftM (Value . INT. fromIntegral ) integer_;}
-        <|> do { str <- identifier; 
+        <|> (try (do { str <- identifier; 
                  e <- iexpr;
-                 return $ APPLY str e; }
+                 return $ APPLY str e; } ) )
         <|> do { str <- identifier; return $ REF str; }

@@ -22,8 +22,8 @@ data IEXPR =
     Value VAL
     | APPLY String IEXPR
     | REF String
-    | ADD IEXPR IEXPR
-    | EQL 
+    | ADDI IEXPR IEXPR
+    | EQLI
     | ST Stmnt
     | LSTV [IEXPR]
     | MOD String Environment

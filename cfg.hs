@@ -61,6 +61,8 @@ data EXPR = Val VAL
             | MULT EXPR EXPR
             | TYPED EXPR EXPR
 
+            | MAP EXPR EXPR
+
             deriving (Show, Eq)
 
 type MODULE = Environment
