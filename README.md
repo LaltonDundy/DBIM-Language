@@ -21,20 +21,19 @@ export let fac : ( Int => Int )   be
 
     \  n : Int  -> 
 
-        if n is 1 then  1
-        else n * ( fac $  (n - 1)  ) 
+        if n is 1 then 1
+        else 
+                n * ( fac $  (n - 1)  ) 
 
 in
 
-module Prelude
+module facMod
 ```
 
 ### Now here is the Pi-Script calling fac from said module
 
 ``` 
-Main: 
-
-    open prelude;
+Procedure:
 
     print (fac  1);
     print (fac  2);
@@ -42,18 +41,23 @@ Main:
     print (fac  4);
 
 End
+
+Main: 
+
+    open facMod;
+    ! Procedure;
+
+End
 ```
 
 ### Currently in Developement
 DBIM was started recently and still needs much more facilites and testing
-#### Things that it still needs
-* Abrstract data types (thus there are yet no lists)
-* looping constructs and general more IO for Pi-Script
 
 ### Future/current goals
-* Complete Dependent typing
+* Complete Dependent typing (Currently in Developement )
+* Built in concurrecy and parrallelism for the lambda-script (Currently in Developement)
 * Declarativly defined classes for objects
 * Functors over modules
-* pi-calculus based conccurency model for the pi-calculus
+* pi-calculus based conccurency model for the pi-script
 
 
