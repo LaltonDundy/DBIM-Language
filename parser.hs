@@ -20,7 +20,7 @@ aOperations = [
         [Infix  (reservedOp "is"   >> return EQL) AssocLeft ],
         [Infix  (reservedOp "*"   >> return MULT) AssocLeft ],
         [Prefix  (reservedOp "fst"   >> return FST) ],
-        [Prefix  (reservedOp "snd"   >> return FST) ],
+        [Prefix  (reservedOp "snd"   >> return SND) ],
         [Infix  (reservedOp "+"   >> return ADD) AssocLeft , Infix  (reservedOp "-"   >> return SUB) AssocLeft ]
 
                 ]

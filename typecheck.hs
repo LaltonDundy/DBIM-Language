@@ -68,14 +68,18 @@ typeCheck env expr = case expr of
 
     FST e -> case e of
                 PAIR a _ -> (typeCheck env a)
-                ID str -> typeCheck env $ (typeCheck env (ID str))
+                ID str -> typeCheck env $ FST $ (typeCheck env (ID str))
                 TYPE_APP e1 e2 -> reg_eval env $ FST $ APP e1 e2
                 APP e1 e2 -> typeCheck env $ FST $ (typeCheck env $ APP e1 e2)
                 rest -> error $ "Not product type: " ++ (show rest)
 
-    SND (PAIR lft rgt) -> typeCheck env rgt
-    SND (ID str) -> typeCheck env $ SND $ fromJust $ lookup_ env str
-    SND v -> error $ "Not Product type: " ++ (show v)
+    SND e -> case e of
+                PAIR _ b -> (typeCheck env b)
+                ID str -> typeCheck env $ SND $ (typeCheck env (ID str))
+                TYPE_APP e1 e2 -> reg_eval env $ SND $ APP e1 e2
+                APP e1 e2 -> typeCheck env $ SND $ (typeCheck env $ APP e1 e2)
+                rest -> error $ "Not product type: " ++ (show rest)
+
 
     SWAP (PAIR lft rgt) -> typeCheck env $ PAIR rgt lft
     SWAP (ID str) -> typeCheck env $ SWAP $ fromJust $  lookup_ env str
@@ -102,7 +106,7 @@ typeCheck env expr = case expr of
          FUNC a b -> case es2 of 
                             v -> if v == ASSUME then b else
                                     (if v == a then b
-                                    else error $ (show v) ++ "\n" ++ (show a) ++ "\n" ++ (show $ APP es1 es2))
+                                    else error $ "Function: \n" ++ (show es1) ++ ("\n Cannot take arg: \n") ++ (show es2) )
 
          APP ex v -> typeCheck env $ APP (typeCheck env $ APP ex v) (typeCheck env es2) 
 

@@ -66,6 +66,7 @@ eval env expr =
                         Nothing -> error $ "Not in scope: " ++ str
 
         EQL (INT n1) (INT n2) -> BOOL $! n1 == n2 
+        EQL (STRING n1) (STRING n2) -> BOOL $! n1 == n2 
         EQL espr1 espr2 -> eval env $! EQL (eval env espr1) (eval env espr2)
 
         NEG (NEG expr) -> eval env $ expr
@@ -85,7 +86,8 @@ eval env expr =
                                     eval env $! MULT first  ( eval env expr2 )
 
         FST (PAIR e1 e2) -> eval env e1
-        FST ( ID str ) -> eval env $! FST (eval env (ID str)) 
+        FST e -> eval env $! FST (eval env e) 
+
         SND (PAIR e1 e2) -> eval env e2
         SND ( ID str ) -> eval env $! SND (eval env (ID str)) 
         SWAP (PAIR e1 e2 ) -> eval env $!   (PAIR e2 e1)
