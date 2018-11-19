@@ -15,9 +15,9 @@ In DBIM all computation and declarations are written in a purely functional/decl
 ### Here is an example module in the Lambda-Script:
 
 ```
-export let  foo : Int   be 0 in
+export let  foo be 0 in
 
-export let fac : ( Int => Int )   be 
+export let fac be 
 
     \  n : Int  -> 
 
@@ -29,6 +29,7 @@ in
 
 module facMod
 ```
+
 
 ### Now here is the Pi-Script calling fac from said module
 
@@ -55,6 +56,34 @@ DBIM was started recently and still needs much more facilites and testing
 
 ### Future/current goals
 * Complete Dependent typing (Currently in Developement )
+#### here is some example of currently working dependent types
+```
+export let vector be
+
+    \ a : TYPE -> 
+    \ n : Int -> 
+
+                | n is 0 ->     @ END
+                | elsewhere ->  (a , (vector $ a $ (n - 1) ) )
+
+in
+
+export let goodVector be
+
+    ( 1 , ( 2 , ( @ END ) ) ) : ( vector $! Int $! 2 )
+
+in
+
+export let badVector be
+
+    ( 1 , ( 2 ,  ( @ END ) ) ) : ( vector $! Int $! 3 )
+
+in
+
+```
+#### This code brings out an error message from the compiler
+#### The 'bad' vector is wrongly typed with the number 3
+
 * Built in concurrecy and parrallelism for the lambda-script (Currently in Developement)
 * Declarativly defined classes for objects
 * Functors over modules
