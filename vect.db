@@ -1,0 +1,70 @@
+export let add be
+
+    \ n1 : Int ->
+    \ n2 : Int -> 
+
+        n1 + n2
+
+in
+
+export let vector be
+
+    \ a : TYPE -> 
+    \ n : Int -> 
+
+                | n is 0 ->     @ END
+                | elsewhere ->  (a , (vector $ a $ (n - 1) ) )
+
+in
+
+export let goodVector be
+
+    ( 1 , ( 2 , ( @ END ) ) ) : ( vector $! Int $! 2 )
+
+in
+
+export let badVector be
+
+    ( 1 , ( 2 ,  ( @ END ) ) ) : ( vector $! Int $! 3 )
+
+in
+
+/*
+export let vectAdd be
+
+    \ n : Int ->
+    \ v1 :  ( vector $! Int $! n ) ->
+    \ v2 :  ( vector $! Int $! n ) ->
+
+                let next be snd v1 in
+
+                let front be add $ (fst v1) $ (fst v2) in
+
+                | next is ( @ END ) -> ( front  , ( @ END ) )
+                | elsewhere ->
+
+
+                  (front , (vectAdd $ (snd y) $ (snd x)))
+
+
+in
+
+export let vect1 be 
+
+    (Pair 1 (Pair 2 (@ END))) : (vector $! Int $! 2) 
+
+in
+
+export let vect2 be 
+
+    (Pair 1 (Pair 2 (Pair 3 (@ END)))) : (vector $! Int $! 3) 
+
+in
+
+export let wrongAns be 
+
+    vectAdd $ 2 $ vect1 $ vect2 
+
+in
+*/
+module Vect

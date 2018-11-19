@@ -11,50 +11,46 @@ import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
 
 aOperations = [
-        [Infix (reservedOp "=>" >>return  (\x y -> TYPE $ FUNC x y)) AssocRight ] ,
-        [Infix (reservedOp "?" >> return  (\x y -> TYPE $ SUM  x y)) AssocLeft ] ,
-        [Infix (reservedOp "," >> return  (\x y -> TYPE $ PROD x y)) AssocLeft ] ,
-        [Infix (reservedOp "$" >> return APP) AssocLeft ] ,
+
         [Infix (reservedOp "|>" >> return (\ x y -> APP y x)) AssocLeft ] ,
+        [Infix (reservedOp "?" >> return  (\x y -> SUM  x y)) AssocLeft ] ,
+        [Infix (reservedOp "$" >> return APP) AssocLeft ] ,
+        [Infix (reservedOp "$!" >> return TYPE_APP) AssocLeft ] ,
+        [Infix (reservedOp "," >> return  (\x y -> PAIR x y)) AssocLeft ] ,
+        [Infix  (reservedOp "is"   >> return EQL) AssocLeft ],
         [Infix  (reservedOp "*"   >> return MULT) AssocLeft ],
         [Prefix  (reservedOp "fst"   >> return FST) ],
         [Prefix  (reservedOp "snd"   >> return FST) ],
-        [Infix  (reservedOp "+"   >> return ADD) AssocLeft , Infix  (reservedOp "-"   >> return SUB) AssocLeft ],
-        [Infix  (reservedOp "is"   >> return EQL) AssocLeft ]
+        [Infix  (reservedOp "+"   >> return ADD) AssocLeft , Infix  (reservedOp "-"   >> return SUB) AssocLeft ]
 
                 ]
 
 aTerm =     
                 types
-            <|> do {reserved "Pair";
-                    lft <- aTerm;
-                    rgt <- aTerm;
-                    return . Val $ PAIR lft rgt;}
-            <|>     liftM (Val . INT . fromIntegral ) integer_
-            <|>  do { reserved "True" ;  return . Val $  (BOOL True) ; }
-            <|>  do { reserved "False" ;  return . Val $  (BOOL False) ; }
+            <|> liftM (INT . fromIntegral) integer_
+            <|>  do { reserved "True" ;  return  (BOOL True) ; }
+            <|>  do { reserved "False" ;  return (BOOL False) ; }
             <|>do {reserved "@";
                 atm <- identifier;
-                return . TYPE . CUSTOM $ atm;} 
+                return . ATOM $ atm;} 
             <|>  do { str <- identifier;
                       return $ ID str; }
             <|> parens esp
+            <|> parens aExpression
+            <|> parens aTerm
 
 
 aExpression = buildExpressionParser aOperations aTerm
 
 types =
-    do { reserved "Int"; return . TYPE $ INT_;} <|>
-    do { reserved "TYPE"; return . KIN $ KIND;} <|>
-    do { reserved "Bool"; return  . TYPE $ BOOL_;} <|>
-    do { reserved "String"; return . TYPE $ STRING_;} <|>
-    do {reserved "@";
-        atm <- identifier;
-        return . TYPE . CUSTOM $ atm;} <|>
-    do {reserved "'";
+    do { reserved "Int"; return INT_;} <|>
+    do { reserved "TYPE"; return TYPE;} <|>
+    do { reserved "Bool"; return  BOOL_;} <|>
+    do { reserved "String"; return STRING_;} <|>
+    do {reserved "`";
         tag <- identifier;
         typ <- aExpression;
-        return . TYPE $ TAGGED_TYP tag typ; }
+        return $ TAGGED tag typ; } 
 
 
 
@@ -87,7 +83,7 @@ typed_val =
 untyped_val  = 
     do {
         str <- identifier;
-        return (str,  TYPE ASSUME); }
+        return (str, ASSUME); }
 
 get_id = try typed_val <|> untyped_val 
 
@@ -104,22 +100,22 @@ esp_or_ex = try export <|> esp
 
 let_type_ex = 
              do { reserved "let";
-                  (str,typ) <- get_id;
+                  str <- identifier;
                   reserved "be";
                   e1 <- types;
                   reserved "in";
-                  return $ LET (str,typ) e1 (ENV [(str,e1)]); }
+                  return $ LET str e1 (ENV [(str,e1)]); }
 let_of_ex =
             do {  reserved "let";
-                  (str,typ) <- get_id;
+                  str <- identifier;
                   reserved "be";
                   e1 <- esp;
                   reserved "in";
-                  return $ LET (str,typ) e1 (ENV [(str,e1)]); }
+                  return $ LET str e1 (ENV [(str,e1)]); }
 
 lett = 
             do {  reserved "let";
-                  str <- get_id;
+                  str <- identifier;
                   reserved "be";
                   e1 <- esp;
                   reserved "in";
@@ -133,11 +129,6 @@ end =
 
 export =
          reserved "export" >> (
----         try $
----        do {let_ <- let_type_ex ;
----           e <- maybe_ex;
----           return $ COLLECT let_ e;}
----             <|>
            do{let_ <- let_of_ex;
               e <- maybe_ex;
               return $ COLLECT let_ e;}
@@ -158,9 +149,13 @@ esp =
 
          guard_
         <|> lambda 
-        <|> (reserved "type" >> types)
         <|> lett
         <|> if_else     
+        <|> (try $ do {
+            e <- parens esp;
+            reserved ":";
+            t <- aTerm;
+            return $ TYPED e t ; } )
         <|> parens esp
         <|> aExpression
         <|> aTerm

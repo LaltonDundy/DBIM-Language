@@ -1,17 +1,3 @@
-export let  foo : Int   be 0 in
-
-export let Fun be (Int => Int) in
-
-export let List : (TYPE => TYPE)  be 
-
-    \ a : TYPE ->
-
-     @ END ? ( a , (List $ a ) )
-
-in
-
-export let vector be (List $ Int) in
-
 export let add : (Int => (Int => Int)) be
 
     \ n1 : Int ->
@@ -19,11 +5,27 @@ export let add : (Int => (Int => Int)) be
         n1 + n2
 in
 
+export let List be 
+
+    \ a : TYPE ->
+
+     @ END ? ( a , (List $ a ) )
+in
+
+export let Maybe be
+
+    \ a : TYPE ->
+            @ Nothing ? ` Just a
+
+in
+
 export let head be 
 
     \ a : TYPE ->
     \ lst : (List $ a) ->
-        fst lst
+
+        | lst is  @ END -> @ Nothing
+        | elsewhere -> ` Just (fst lst)
 
 in
 
@@ -31,11 +33,13 @@ export let tail be
 
     \ a : TYPE ->
     \ lst : (List $ a) ->
-        snd lst
+
+        | lst is  @ END -> @ Nothing
+        | elsewhere -> ` Just (snd lst)
 
 in
 
-export let fac : Fun  be 
+export let fac be 
 
     \  n : Int  -> 
 
@@ -43,7 +47,5 @@ export let fac : Fun  be
         else n * ( fac $ (n - 1)  ) 
 
 in
-
-export let tup be Pair 1 2 in
 
 module Prelude

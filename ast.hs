@@ -19,7 +19,7 @@ data Stmnt =
 
 
 data IEXPR =
-    Value VAL
+    Value EXPR 
     | APPLY String IEXPR
     | REF String
     | ADDI IEXPR IEXPR

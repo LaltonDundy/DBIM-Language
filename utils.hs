@@ -29,25 +29,25 @@ apply modul str  ex2 =
                                     Just e -> e
                                     Nothing -> error "apply did not work"  
                         in
-                        LET (str,TYPE ASSUME) v   (APP (ID str) ex2)
+                        LET str v (APP (ID str) ex2)
 
 iexprToExpr :: [(String, IEXPR)] -> IEXPR -> EXPR
 iexprToExpr refer espr = case espr of
-    (Value v) -> Val v
+    (Value v) -> v
     (REF str) -> case lookup_ refer str of
-                    Just (Value e)  -> Val  e
+                    Just (Value e)  -> e
                     Nothing -> error " Not foreign object" 
-    LSTV [] ->TYPE $ CUSTOM "END"
-    LSTV (x:xs) -> Val $ PAIR (iexprToExpr refer x) (iexprToExpr refer $ LSTV xs)
+
+    LSTV [] -> ATOM "END"
+    LSTV (x:xs) -> PAIR (iexprToExpr refer x) (iexprToExpr refer $ LSTV xs)
 
     _ -> error "Not convertable to expr"
 
 exprToIexpr :: [(String, IEXPR)] -> EXPR -> IEXPR
 exprToIexpr refer espr = case espr of
-    (TYPED (Val v) _ ) -> Value v
-    Val ( PAIR x y ) -> LSTV $ (exprToIexpr refer x) : rest
+    TYPED v _  -> Value v
+    PAIR x y -> LSTV $ (exprToIexpr refer x) : rest
                             where rest = case ( exprToIexpr refer y ) of
                                             LSTV ls -> ls
                                             _ -> [] 
-    Val v -> Value v
     v -> exprToIexpr refer $ eval [] v
