@@ -6,6 +6,7 @@ import CFG
 import Eval
 import Data.Maybe
 
+-- Used for when ploymorphic typings relying on a previous application. 
 find_and_replace :: String -> EXPR -> EXPR -> EXPR
 find_and_replace str v esp =
      case esp of
@@ -26,8 +27,9 @@ assert_type :: Environment -> EXPR -> EXPR -> EXPR
 assert_type env e t =  
     let left = typeCheck env e in
     let right = reg_eval env t in
-    if  ((left /= right) && (left /= TYPE)) then error $ (serial_db left) ++ " Does not equal " ++ (serial_db right) ++ "\n"
-                                                        ++ "for " ++ (show e) ++ "\nand\n" ++ (show t)
+    if  ((left /= right) && (left /= TYPE)) then 
+        error $ (serial_db left) ++ " Does not equal " ++ (serial_db right) ++ "\n"
+                            ++ "for " ++ (show e) ++ "\nand\n" ++ (show t)
     else right 
  
 -- traditionally evaluate an APP. Usually for building types
@@ -36,10 +38,13 @@ reg_eval env e = de_closure $ eval (reverse env) e
 
 -- Get rid of those damn colsures
 de_closure :: EXPR -> EXPR
-de_closure (CLOSURE ( str , (CLOSURE c), env) ) = let typ = fromJust $ lookup_ env str in
-                                                     LAMBDA (str, typ) (de_closure $ CLOSURE c)
-de_closure (CLOSURE ( str ,expr, env) ) = let typ = fromJust $ lookup_ env str in
-                                            LAMBDA (str, typ) expr
+de_closure (CLOSURE ( str , (CLOSURE c), env) ) = 
+                    let typ = fromJust $ lookup_ env str in
+                         LAMBDA (str, typ) (de_closure $ CLOSURE c)
+
+de_closure (CLOSURE ( str ,expr, env) ) = 
+                    let typ = fromJust $ lookup_ env str in
+                        LAMBDA (str, typ) expr
 de_closure e = e
 
 -- Fully evaluates to head expression
@@ -68,11 +73,17 @@ unambiguate env expr = case expr of
     v -> v
 
 
+-- Lift Lambdas to the FUNC level when needed
 lambdaLift env ex = 
         case ex of
             LAMBDA (_ , typ) es -> FUNC typ (lambdaLift env es)
             ID str -> lambdaLift env $ fromJust $  lookup_ env str
             v -> typeCheck env v
+
+
+{- 
+ - Most important part of the typeChecker. 
+ - DBIM's typeChecker depends soley on whether application is faithful or not -}
 
 application_handler :: Environment -> EXPR -> EXPR -> EXPR
 application_handler env e1 e2 = case e1 of
@@ -82,22 +93,26 @@ application_handler env e1 e2 = case e1 of
     LAMBDA (str, typ) es -> 
                 case typ of
 
-                    TYPE_APP es1 es2 -> if (lambdaLift env e2) == (typeCheck env $ TYPE_APP es1 es2) then (find_and_replace str e2 es)
-                                else error $ "application Handler type error 1.\n" ++
-                                    (show $ typeCheck env $ TYPE_APP es1 es2) ++ "\n" ++ 
-                                    (show $ lambdaLift env e2) ++ " \n in \n " ++
-                                    (show $ APP e1 e2)
+                    TYPE_APP es1 es2 -> if (lambdaLift env e2) == (typeCheck env $ TYPE_APP es1 es2) 
+                                        then (find_and_replace str e2 es)
+                                        else error $ "application Handler type error 1.\n" ++
+                                            (show $ typeCheck env $ TYPE_APP es1 es2) ++ "\n" ++ 
+                                            (show $ lambdaLift env e2) ++ " \n in \n " ++
+                                            (show $ APP e1 e2)
 
-                    v -> if (lambdaLift env e2) == typ then (find_and_replace str e2 es)
-                                else error $ "application Handler type error 2.\n" ++
-                                    (show typ ) ++ "\n" ++ 
-                                    (show $ lambdaLift env e2) ++ " \n in \n " ++
-                                    (show $ APP e1 e2)
+                    v -> if (lambdaLift env e2) == typ 
+                         then (find_and_replace str e2 es)
+                         else error $ "application Handler type error 2.\n" ++
+                            (show typ ) ++ "\n" ++ 
+                            (show $ lambdaLift env e2) ++ " \n in \n " ++
+                            (show $ APP e1 e2)
 
     APP es1 es2 -> application_handler  env (application_handler env es1 es2 ) e2
 
     v -> error $ "case not written for " ++ (show v)
 
+
+--Main type Checker
 typeCheck :: Environment -> EXPR -> EXPR 
 typeCheck env expr = case expr of
 
@@ -131,7 +146,7 @@ typeCheck env expr = case expr of
 
     ID str -> case lookup_ env str of
                 Just v-> v
-                Nothing ->  ASSUME --error $ "Not in environment: " ++ (show str)
+                Nothing ->  ASSUME 
 
     TYPE_APP e1 e2 -> typeCheck env $ de_closure $ reg_eval env $ TYPE_APP e1 e2
 
@@ -141,11 +156,7 @@ typeCheck env expr = case expr of
 
     IF bes es1 es2 -> if ( (typeCheck env bes) /= BOOL_  ) &&
                          ( (typeCheck env bes) /= ASSUME ) 
-                        then error "Conditional needs Bool type."
-    {-                   else if (typeCheck env es1) /= (typeCheck env es2) then error $
-                                 "Expressions in conditional need to match:\n" ++ (serial_db ( typeCheck env es1)) ++ "\n" ++ (serial_db ( typeCheck env es2)) 
-                                        ++ " in\n" ++
-                                (serial_db $ IF bes es1 es2 )-}
+                      then error "Conditional needs Bool type."
                       else (typeCheck env es1) 
 
     ENV ((str, x) : xs) ->  ENV $ (str, typeCheck env x) : rest
@@ -153,13 +164,14 @@ typeCheck env expr = case expr of
                                             
     ENV [] -> ENV []
 
-    COLLECT (LET str e body) MOD_NAME-> let final = typeCheck ( ( str , ASSUME ) : env ) e  in
-                                                ENV $ (str, final ) : env
+    COLLECT (LET str e body) MOD_NAME-> 
+                let final = typeCheck ( ( str , ASSUME ) : env ) e  in
+                ENV $ (str, final ) : env
 
 
-    COLLECT (LET str e body) rest -> case typeCheck ( ( str , ASSUME ) : env ) e of
-
-                                                v -> typeCheck ( (str, v) : env ) rest
+    COLLECT (LET str e body) rest -> 
+            case typeCheck ( ( str , ASSUME ) : env ) e of
+                v -> typeCheck ( (str, v) : env ) rest
 
 
     MOD_NAME ->  error "empty module"
@@ -168,7 +180,8 @@ typeCheck env expr = case expr of
                       ( (typeCheck env es1) /= ASSUME) &&
                       ( (typeCheck env es2) /= ASSUME) then
 
-                       error $ "Types not equal: " ++ ( show $ typeCheck env es1 ) ++ " " ++ ( show $ typeCheck env es2 )
+                       error $ "Types not equal: " ++ ( show $ typeCheck env es1 ) 
+                                            ++ " " ++ ( show $ typeCheck env es2 )
 
                    else BOOL_
 
