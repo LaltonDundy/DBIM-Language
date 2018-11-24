@@ -93,4 +93,7 @@ eval env expr =
         SWAP (PAIR e1 e2 ) -> eval env $!   (PAIR e2 e1)
         SWAP ( ID str ) -> eval env $! SWAP (eval env (ID str)) 
 
+        FUNC a b  -> FUNC (eval env a) (eval env b)
+
+        TYPE -> TYPE 
         e -> error $ "Eval case not written: " ++ (show e)
