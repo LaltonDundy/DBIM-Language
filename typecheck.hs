@@ -6,6 +6,21 @@ import CFG
 import Eval
 import Data.Maybe
 
+find_and_replace :: String -> EXPR -> EXPR -> EXPR
+find_and_replace str v esp =
+     case esp of
+
+        (ID s) -> if s == str then v else (ID s )
+        FUNC a b -> FUNC (find_and_replace str v a) ( find_and_replace str v b)
+        TYPE_APP a b -> TYPE_APP (find_and_replace str v a) (find_and_replace str v b)
+        LAMBDA (name, typ)  es -> if name == str then LAMBDA (name , typ) es else 
+                                    LAMBDA (name, (find_and_replace str v typ) ) (find_and_replace str v es)
+
+        LET name e body -> if name == str then LET name e body else
+                                LET name (find_and_replace str v e) (find_and_replace str v body)
+
+        rest -> rest 
+
 -- Asserts resultling type should be of specified type
 assert_type :: Environment -> EXPR -> EXPR -> EXPR 
 assert_type env e t =  
@@ -21,8 +36,10 @@ reg_eval env e = de_closure $ eval (reverse env) e
 
 -- Get rid of those damn colsures
 de_closure :: EXPR -> EXPR
-de_closure (CLOSURE ( str , (CLOSURE c), env) ) = LAMBDA (str, ASSUME) (de_closure $ CLOSURE c)
-de_closure (CLOSURE ( str ,expr, env) ) = LAMBDA (str, ASSUME) expr
+de_closure (CLOSURE ( str , (CLOSURE c), env) ) = let typ = fromJust $ lookup_ env str in
+                                                     LAMBDA (str, typ) (de_closure $ CLOSURE c)
+de_closure (CLOSURE ( str ,expr, env) ) = let typ = fromJust $ lookup_ env str in
+                                            LAMBDA (str, typ) expr
 de_closure e = e
 
 -- Fully evaluates to head expression
@@ -36,8 +53,9 @@ type_to_head env e = case typeCheck env e of
 --  All Id's are replaced with their meanings
 unambiguate :: Environment -> EXPR -> EXPR
 unambiguate env expr = case expr of
-    ID str -> unambiguate env $ reg_eval env (ID str)
+    ID str -> unambiguate env $ typeCheck env (ID str)
     PAIR a b -> PAIR (unambiguate env a) (unambiguate env b)
+    FUNC a b -> FUNC (unambiguate env a) (unambiguate env b)
     APP a b -> APP (unambiguate env a) (unambiguate env b)
     TYPE_APP a b -> TYPE_APP (unambiguate env a) (unambiguate env b)
     FST x -> FST $ (unambiguate env x)
@@ -50,20 +68,44 @@ unambiguate env expr = case expr of
     v -> v
 
 
-bare_form :: Environment -> EXPR -> EXPR
-bare_form env expr = 
-    if (reduct expr) == expr then expr 
-    else bare_form env (reduct expr)
-        where reduct = (unambiguate env) . (type_to_head env)
+lambdaLift env ex = 
+        case ex of
+            LAMBDA (_ , typ) es -> FUNC typ (lambdaLift env es)
+            ID str -> lambdaLift env $ fromJust $  lookup_ env str
+            v -> typeCheck env v
 
+application_handler :: Environment -> EXPR -> EXPR -> EXPR
+application_handler env e1 e2 = case e1 of
+
+    ID str -> application_handler env (fromJust $ lookup_ env str) e2
+
+    LAMBDA (str, typ) es -> 
+                case typ of
+
+                    TYPE_APP es1 es2 -> if (lambdaLift env e2) == (typeCheck env $ TYPE_APP es1 es2) then (find_and_replace str e2 es)
+                                else error $ "application Handler type error 1.\n" ++
+                                    (show $ typeCheck env $ TYPE_APP es1 es2) ++ "\n" ++ 
+                                    (show $ lambdaLift env e2) ++ " \n in \n " ++
+                                    (show $ APP e1 e2)
+
+                    v -> if (lambdaLift env e2) == typ then (find_and_replace str e2 es)
+                                else error $ "application Handler type error 2.\n" ++
+                                    (show typ ) ++ "\n" ++ 
+                                    (show $ lambdaLift env e2) ++ " \n in \n " ++
+                                    (show $ APP e1 e2)
+
+    APP es1 es2 -> application_handler  env (application_handler env es1 es2 ) e2
+
+    v -> error $ "case not written for " ++ (show v)
 
 typeCheck :: Environment -> EXPR -> EXPR 
 typeCheck env expr = case expr of
 
+    CLOSURE c ->  de_closure $ CLOSURE c
     ATOM a -> ATOM a
     PAIR lft rgt -> PAIR (typeCheck env lft) (typeCheck env rgt)
-    INT _  ->  INT_ 
-    BOOL _ ->  BOOL_ 
+    INT _  ->  INT_
+    BOOL _ ->  BOOL_
     STRING _ -> STRING_
 
     FST e -> case e of
@@ -85,36 +127,17 @@ typeCheck env expr = case expr of
     SWAP (ID str) -> typeCheck env $ SWAP $ fromJust $  lookup_ env str
     SWAP v -> error $ "Not Product type: " ++ (show v)
 
-    LET str es1 es2 -> let strTyp = typeCheck ( (str, ASSUME) : env ) es1 in
-                                     (typeCheck ( ( str, strTyp ) : env ) es2)
+    LET str es1 es2 ->  (typeCheck ( (str, es1 ) : env ) es2)
 
-    ID str -> case (lookup_ env str) of
+    ID str -> case lookup_ env str of
                 Just v-> v
-                Nothing ->  ASSUME
+                Nothing ->  ASSUME --error $ "Not in environment: " ++ (show str)
 
-    TYPE_APP e1 e2 -> de_closure $ reg_eval env $ TYPE_APP e1 e2
+    TYPE_APP e1 e2 -> typeCheck env $ de_closure $ reg_eval env $ TYPE_APP e1 e2
 
-    APP es1 es2 -> case es1 of
+    APP es1 es2 -> application_handler env es1 es2
 
-         ASSUME ->(typeCheck env es2)
-         TYPE -> (typeCheck env es2)
-         LAMBDA (str, typ) es -> typeCheck env $ FUNC typ (typeCheck env es)
-         CLOSURE c -> typeCheck env $ APP (de_closure (CLOSURE c)) es2
-
-         ID str ->  typeCheck env $ APP (typeCheck env (ID str)) es2
-
-         FUNC a b -> case es2 of 
-                            v -> if v == ASSUME then b else
-                                    (if v == a then b
-                                    else error $ "Function: \n" ++ (show es1) ++ ("\n Cannot take arg: \n") ++ (show es2) )
-
-         APP ex v -> typeCheck env $ APP (typeCheck env $ APP ex v) (typeCheck env es2) 
-
-         v -> error $  "Not function: " ++ (show v) ++ " for argument: " ++ (show $ es2)
-
-
-    LAMBDA (str, typ) es -> let newEnv = (str, typ) : env in
-                                      FUNC typ (typeCheck newEnv es)
+    LAMBDA (str, typ) es -> LAMBDA (str, typ) es
 
     IF bes es1 es2 -> if ( (typeCheck env bes) /= BOOL_  ) &&
                          ( (typeCheck env bes) /= ASSUME ) 
@@ -130,9 +153,14 @@ typeCheck env expr = case expr of
                                             
     ENV [] -> ENV []
 
-    COLLECT es MOD_NAME -> COLLECT (typeCheck env es) MOD_NAME
+    COLLECT (LET str e body) MOD_NAME-> let final = typeCheck ( ( str , ASSUME ) : env ) e  in
+                                                ENV $ (str, final ) : env
 
-    COLLECT es1 es2 ->  COLLECT (typeCheck env es1) (typeCheck env es2)
+
+    COLLECT (LET str e body) rest -> case typeCheck ( ( str , ASSUME ) : env ) e of
+
+                                                v -> typeCheck ( (str, v) : env ) rest
+
 
     MOD_NAME ->  error "empty module"
 
@@ -177,12 +205,14 @@ typeCheck env expr = case expr of
 
     TYPE -> TYPE
 
+    STRING_ -> TYPE
+
     INT_ -> TYPE
 
     BOOL_ -> TYPE
 
     ASSUME -> ASSUME
 
-    FUNC a b -> FUNC a b
+    FUNC a b -> TYPE
 
     rest -> error  $ "Untypable: " ++ ( show rest)
