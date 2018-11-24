@@ -1,6 +1,9 @@
 -- DBIM project, Dalton Lundy
 module Utils where 
 
+{-# LANGUAGE BangPatterns #-}
+
+import TypeCheck
 import CFG
 import AST
 import Lexer 
@@ -17,25 +20,32 @@ parseString str =
 getModule :: String -> IO IEXPR
 getModule str = 
                 do {
-                    program <- readFile (str ++ ".db") ;
-                    case (eval [] ) . parseString  $ program of
-                            ENV lst -> return  $  (MOD str lst)
+
+                    text <- readFile (str ++ ".db") ;
+                    program <- return . parseString $ text;
+                    print $ "========  Importing " ++ str ++ " ============" ;
+                    case (eval [] ) $ program of
+                            ENV lst -> let !y = print $! typeCheck lst program in
+                                         y >> (print $ "======= Imported " ++ str ++ " =============")
+                                          >> (return $ (MOD str lst))
                             v -> error $ "Not of type module: " ++ (show v)
-                } 
+                    } 
 
 apply :: [ (String, EXPR ) ] -> String -> EXPR -> EXPR
-apply modul str  ex2 =
+apply modul str  ex2 = 
                          let v = case (lookup_ modul str) of 
                                     Just e -> e
                                     Nothing -> error "apply did not work"  
                         in
-                        LET str v (APP (ID str) ex2)
+
+                        eval modul $ LET str v (APP (ID str) ex2)
+
 
 iexprToExpr :: [(String, IEXPR)] -> IEXPR -> EXPR
 iexprToExpr refer espr = case espr of
     (Value v) -> v
     (REF str) -> case lookup_ refer str of
-                    Just (Value e)  -> e
+                    Just e  -> iexprToExpr refer e 
                     Nothing -> error " Not foreign object" 
 
     LSTV [] -> ATOM "END"
@@ -46,8 +56,9 @@ iexprToExpr refer espr = case espr of
 exprToIexpr :: [(String, IEXPR)] -> EXPR -> IEXPR
 exprToIexpr refer espr = case espr of
     TYPED v _  -> Value v
+    TAGGED _  ex -> (exprToIexpr refer ex)
     PAIR x y -> LSTV $ (exprToIexpr refer x) : rest
                             where rest = case ( exprToIexpr refer y ) of
                                             LSTV ls -> ls
                                             _ -> [] 
-    v -> exprToIexpr refer $ eval [] v
+    v -> Value v

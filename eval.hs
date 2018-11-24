@@ -20,6 +20,7 @@ eval env expr =
         INT_ -> INT_
         STRING_ -> STRING_
         INT n -> INT n
+        BOOL v -> BOOL v
 
         TYPED e t -> e
 
@@ -65,9 +66,15 @@ eval env expr =
                         Just v -> v
                         Nothing -> error $ "Not in scope: " ++ str
 
-        EQL (INT n1) (INT n2) -> BOOL $! n1 == n2 
+
+        EQL (INT n1) (INT n2) -> BOOL $ n1 == n2
         EQL (STRING n1) (STRING n2) -> BOOL $! n1 == n2 
-        EQL espr1 espr2 -> eval env $! EQL (eval env espr1) (eval env espr2)
+        EQL (BOOL n1) (BOOL n2) -> BOOL $! n1 == n2 
+        EQL (ID str) espr2 -> eval env $! EQL (eval env (ID str)) (eval env espr2)
+        EQL espr (ID str)-> eval env $! EQL  (eval env espr) (eval env (ID str))
+        EQL (APP e1 e2) espr2 -> eval env $! EQL (eval env (APP e1 e2)) (eval env espr2)
+        EQL espr (APP e1 e2)-> eval env $! EQL  (eval env espr) ( eval env (APP e1 e2) )
+        EQL e1 e2 -> BOOL $ e1 == e2
 
         NEG (NEG expr) -> eval env $ expr
         NEG ( INT v1 ) -> INT (- v1) 
@@ -96,4 +103,7 @@ eval env expr =
         FUNC a b  -> FUNC (eval env a) (eval env b)
 
         TYPE -> TYPE 
+
+        TAGGED str ex -> TAGGED str (eval env ex)
+
         e -> error $ "Eval case not written: " ++ (show e)

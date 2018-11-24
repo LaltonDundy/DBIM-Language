@@ -41,7 +41,8 @@ evalI ( stmnt, refer) = case stmnt of
     CALL str -> do { v <- return $ lookup str refer; 
                     case v of
                         Just (ST process) -> evalI (process, refer)
-                        _ -> error "Not a callable process" }
+                        v -> error $ "Not a callable process: " ++ (show v)
+                        }
 
     ASSIGN str expr -> 
 
