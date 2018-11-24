@@ -1,43 +1,81 @@
-export let add : (Int => (Int => Int)) be
+export let id be
+
+    \ x -> x
+
+in
+
+export let add be
 
     \ n1 : Int ->
     \ n2 : Int -> 
-        n1 + n2
+
+        (n1 + n2) : Int
 in
+
+export let succ be
+
+    add $ 1
+
+in
+
 
 export let List be 
 
     \ a : TYPE ->
 
-     @ END ? ( a , (List $ a ) )
+         @ END ? ( a , (List $ a ) )
+in
+
+export let length be
+
+    \ a : TYPE ->
+    \ lst : (List $! a) ->
+
+        if lst is ( @ END ) then 0
+        else ( 1 + (length $ a $ (snd lst)))
+
+in
+
+export let myLength be 
+
+    length $ Int
+
 in
 
 export let Maybe be
 
     \ a : TYPE ->
-            @ Nothing ? ` Just a
+
+        @ Nothing ? ` Just a
 
 in
 
 export let head be 
 
     \ a : TYPE ->
-    \ lst : (List $ a) ->
+    \ lst : (List $! a) ->
 
         | lst is  @ END -> @ Nothing
         | elsewhere -> ` Just (fst lst)
 
 in
 
+export let myHead be
+
+    head $ Int
+
+in
+
 export let tail be 
 
     \ a : TYPE ->
-    \ lst : (List $ a) ->
+    \ lst : (List $! a) ->
 
         | lst is  @ END -> @ Nothing
         | elsewhere -> ` Just (snd lst)
 
 in
+
 
 export let fac be 
 
