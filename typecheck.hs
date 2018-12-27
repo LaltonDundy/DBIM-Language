@@ -5,6 +5,8 @@ import Serial
 import CFG
 import Eval
 import Data.Maybe
+import Control.Applicative
+
 
 -- Used for when ploymorphic typings relying on a previous application. 
 find_and_replace :: String -> EXPR -> EXPR -> EXPR
@@ -16,9 +18,6 @@ find_and_replace str v esp =
         TYPE_APP a b -> TYPE_APP (find_and_replace str v a) (find_and_replace str v b)
         LAMBDA (name, typ)  es -> if name == str then LAMBDA (name , typ) es else 
                                     LAMBDA (name, (find_and_replace str v typ) ) (find_and_replace str v es)
-
-        LET name e body -> if name == str then LET name e body else
-                                LET name (find_and_replace str v e) (find_and_replace str v body)
 
         rest -> rest 
 
@@ -34,17 +33,19 @@ assert_type env e t =
  
 -- traditionally evaluate an APP. Usually for building types
 reg_eval :: Environment -> EXPR -> EXPR
-reg_eval env e = de_closure $ eval (reverse env) e
+reg_eval env e = de_closure $ eval env e
 
 -- Get rid of those damn colsures
 de_closure :: EXPR -> EXPR
 de_closure (CLOSURE ( str , (CLOSURE c), env) ) = 
-                    let typ = fromJust $ lookup_ env str in
-                         LAMBDA (str, typ) (de_closure $ CLOSURE c)
+                    case lookup_ env str of
+                        Just typ -> LAMBDA (str, typ) (de_closure $ CLOSURE c)
+                        Nothing -> error $ " de_closure could not lookup: " ++ ( str )
 
 de_closure (CLOSURE ( str ,expr, env) ) = 
-                    let typ = fromJust $ lookup_ env str in
-                        LAMBDA (str, typ) expr
+                    case lookup_ env str of
+                        Just typ -> LAMBDA (str, typ) expr
+                        Nothing -> error $ " de_closure could not lookup: " ++ ( str )
 de_closure e = e
 
 -- Fully evaluates to head expression
@@ -72,44 +73,90 @@ unambiguate env expr = case expr of
     EQL a b -> EQL (unambiguate env a) (unambiguate env b)
     v -> v
 
+sumcheck env ex (SUM a b) = 
+    case ex of
+
+        PAIR e1 e2 -> 
+
+            case (a , b) of
+
+                ((PAIR a1 b1) , (PAIR a2 b2)) ->
+                        (sumcheck env e1 a1) <%> 
+                        (sumcheck env e2 b1) <%>
+                        (sumcheck env e1 a2) <%>
+                        (sumcheck env e2 b2) 
+                ((PAIR a1 b1) , v) -> 
+                        (sumcheck env e1 a1) <%> 
+                        (sumcheck env e2 b1) 
+                (v, (PAIR a1 b1))  -> 
+                        (sumcheck env e1 a1) <%> 
+                        (sumcheck env e2 b1) 
+
+                _ -> ERR 0 $ TypeErr ex (SUM a b) ex
+
+
+        _ -> (assert_type env ex a ) <%> (assert_type env ex b)
+
+sumcheck env ex v = ERR 0 $ TypeErr ex v ASSUME
 
 -- Lift Lambdas to the FUNC level when needed
 lambdaLift env ex = 
         case ex of
-            LAMBDA (_ , typ) es -> FUNC typ (lambdaLift env es)
-            ID str -> lambdaLift env $ fromJust $  lookup_ env str
+            LAMBDA (s , typ) es -> FUNC typ (lambdaLift ( ( s , typ ) : env) es)
+            ID str -> case lookup_ env str of
+                        Just v -> lambdaLift env v
+                        Nothing -> ERR 0 $ Notfound str ASSUME
             v -> typeCheck env v
-
 
 {- 
  - Most important part of the typeChecker. 
  - DBIM's typeChecker depends soley on whether application is faithful or not -}
-
 application_handler :: Environment -> EXPR -> EXPR -> EXPR
 application_handler env e1 e2 = case e1 of
 
-    ID str -> application_handler env (fromJust $ lookup_ env str) e2
+    ID str -> case lookup_ env str of 
+                    Just v -> application_handler env v e2
+                    Nothing -> error $ "application_handler could not lookup: " ++ str
 
     LAMBDA (str, typ) es -> 
                 case typ of
 
-                    TYPE_APP es1 es2 -> if (lambdaLift env e2) == (typeCheck env $ TYPE_APP es1 es2) 
-                                        then (find_and_replace str e2 es)
-                                        else error $ "application Handler type error 1.\n" ++
-                                            (show $ typeCheck env $ TYPE_APP es1 es2) ++ "\n" ++ 
-                                            (show $ lambdaLift env e2) ++ " \n in \n " ++
-                                            (show $ APP e1 e2)
+                    TYPE_APP es1 es2 ->
 
-                    v -> if (lambdaLift env e2) == typ 
-                         then (find_and_replace str e2 es)
-                         else error $ "application Handler type error 2.\n" ++
-                            (show typ ) ++ "\n" ++ 
-                            (show $ lambdaLift env e2) ++ " \n in \n " ++
-                            (show $ APP e1 e2)
+                       case (lambdaLift env e2) of
+
+                                    ERR n e -> err_handlr n e e2
+
+                                    v -> case (typeCheck env $ TYPE_APP es1 es2) of
+
+                                            SUM (ERR n e) _ -> err_handlr n e (LAMBDA (str, typ) es)
+                                            SUM _ (ERR n e) -> err_handlr n e (LAMBDA (str, typ) es)
+
+                                            SUM a b -> sumcheck env e2 (SUM a b)
+
+                                            _ ->
+                                                if v  == (typeCheck env $ TYPE_APP es1 es2) 
+                                                    then (typeCheck ( (str, e2) : env ) (find_and_replace str e2 es) )
+                                                    else error $ "application Handler type error 1.\n" ++
+                                                        (show $ typeCheck env $ TYPE_APP es1 es2) ++ "\n" ++ 
+                                                        (show $ lambdaLift env e2) ++ " \n in \n " ++
+                                                        (show $ APP e1 e2)
+                    v -> 
+
+                         case (lambdaLift env e2) of
+
+                                    ERR n e -> err_handlr n e e2
+
+                                    v' -> if v' == typ 
+                                             then (find_and_replace str e2 es)
+                                             else error $ "application Handler type error 2.\n" ++
+                                                (show typ ) ++ "\n" ++ 
+                                                (show $ lambdaLift env e2) ++ " \n in \n " ++
+                                                (show $ APP e1 e2)
 
     APP es1 es2 -> application_handler  env (application_handler env es1 es2 ) e2
 
-    v -> error $ "case not written for " ++ (show v)
+    v -> error $ " application_handler case not written for " ++ (show v)
 
 
 --Main type Checker
@@ -118,7 +165,11 @@ typeCheck env expr = case expr of
 
     CLOSURE c ->  de_closure $ CLOSURE c
     ATOM a -> ATOM a
+
+    PAIR (ERR n e) b -> err_handlr n e (PAIR (ERR n e) b )
+    PAIR b (ERR n e) -> err_handlr n e (PAIR b (ERR n e) )
     PAIR lft rgt -> PAIR (typeCheck env lft) (typeCheck env rgt)
+
     INT _  ->  INT_
     BOOL _ ->  BOOL_
     STRING _ -> STRING_
@@ -227,5 +278,9 @@ typeCheck env expr = case expr of
     ASSUME -> ASSUME
 
     FUNC a b -> TYPE
+
+    SUM (ERR n e) b -> err_handlr n e (SUM (ERR n e) b )
+    SUM b (ERR n e) -> err_handlr n e (SUM b (ERR n e) )
+    SUM a b -> SUM (typeCheck env a) (typeCheck env b)
 
     rest -> error  $ "Untypable: " ++ ( show rest)
