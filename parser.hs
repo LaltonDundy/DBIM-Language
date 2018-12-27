@@ -14,6 +14,7 @@ aOperations = [
 
         [Infix (reservedOp "|>" >> return (\ x y -> APP y x)) AssocLeft ] ,
         [Infix (reservedOp "?" >> return  (\x y -> SUM  x y)) AssocLeft ] ,
+        [Infix (reservedOp "=>" >> return  (\x y -> FUNC x y)) AssocRight] ,
         [Infix (reservedOp "$" >> return APP) AssocLeft ] ,
         [Infix (reservedOp "$!" >> return TYPE_APP) AssocLeft ] ,
         [Infix (reservedOp "," >> return  (\x y -> PAIR x y)) AssocLeft ] ,

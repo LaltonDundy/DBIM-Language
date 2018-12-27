@@ -1,6 +1,7 @@
 import AST
 import CFG
 import EvalI
+import Serial
 import Data.Text (pack)
 import Text.ParserCombinators.Parsec
 import ParserI
@@ -16,6 +17,8 @@ main :: IO ()
 main = do {
 
     program <- readFile "testCodeI.im";
-    e <-  evalI  $ ( ( parseString  program) , empty );
+    e <-  return  $ ( ( parseString  program) , empty );
+    evalI e;
     return ();
+
 }

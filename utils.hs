@@ -25,7 +25,8 @@ getModule str =
                     program <- return . parseString $ text;
                     print $ "========  Importing " ++ str ++ " ============" ;
                     case (eval [] ) $ program of
-                            ENV lst -> let !y = print $! typeCheck lst program in
+                            ENV lst -> 
+                                        let !y = print $! typeCheck lst program in
                                          y >> (print $ "======= Imported " ++ str ++ " =============")
                                           >> (return $ (MOD str lst))
                             v -> error $ "Not of type module: " ++ (show v)
@@ -38,7 +39,7 @@ apply modul str  ex2 =
                                     Nothing -> error "apply did not work"  
                         in
 
-                        eval modul $ LET str v (APP (ID str) ex2)
+                        eval modul $ APP (eval modul v) ex2
 
 
 iexprToExpr :: [(String, IEXPR)] -> IEXPR -> EXPR

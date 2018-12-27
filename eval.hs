@@ -5,10 +5,24 @@ import  CFG
 import Control.Parallel
 import Data.Maybe
 import Control.DeepSeq
+import Serial
 
 lookup_ ((s,v) : sx) ident = if s == ident then (Just v)
                              else lookup_ sx ident
 lookup_ [] ident = Nothing
+
+errdepth = 1
+
+err_handlr :: Int -> Error -> EXPR -> EXPR
+err_handlr n err ex = 
+    if n == errdepth then error  (serial_db $ ERR n err )
+    else
+        case err of
+            Notfound str _  ->ERR (n + 1) $ Notfound str ex
+            TypeErr e1 e2 _ ->ERR (n + 1) $ TypeErr e1 e2 ex
+
+deHead (ENV e) = e
+deHead _ = error "You are using this function wrong"
 
 eval :: Environment -> EXPR -> EXPR
 eval env expr =
@@ -24,9 +38,11 @@ eval env expr =
 
         TYPED e t -> e
 
+        PAIR (ERR n e) b -> err_handlr n e (PAIR (ERR n e) b )
+        PAIR b (ERR n e) -> err_handlr n e (PAIR b (ERR n e) )
         PAIR e1 e2 -> PAIR (eval env e1) (eval env e2)
 
-        COLLECT (LET str e1 e2) rest -> ENV $  [(str, e1) ]  ++ other
+        COLLECT (LET str e1 e2) rest -> ENV $  ( deHead e2)  ++ other
                             where  other  = case (eval env rest) of 
                                                     (ENV lst) -> (lst :: [ ( String, EXPR ) ] )
 
@@ -50,13 +66,19 @@ eval env expr =
 
                 (CLOSURE (s, ex, env' ) ) ->
 
-                              let arg = ( eval env expr2 ) in 
+                              let arg = eval env expr2 in 
 
-                              eval (  ( s , arg ) : env' ) ex
+                              case eval (  ( s , arg ) : env' ) ex of
 
-                LAMBDA (s,_) es -> eval env $ APP (CLOSURE (s,es,env)) expr2
+                                        ID str -> eval  ( ( s , arg ) : env' ) $
+                                                      fromJust $ lookup_ ( ( s , arg ) : env ) str
 
-                v -> error $ "Unchecked Type : " ++ (show v)
+                                        v -> eval ( ( s , arg ) : env') v
+
+                LAMBDA (s,_) es -> eval env (APP (CLOSURE (s, es, env) ) expr2)
+
+                v -> eval env $ APP (eval env expr1) expr2
+
 
         LET str expr1 expr2 -> eval ((str, val) : env) expr2
                 where val =  eval ( (str, recur) : env ) expr1
@@ -64,9 +86,10 @@ eval env expr =
 
         ID str ->  case  lookup_ env str of
                         Just v -> v
-                        Nothing -> error $ "Not in scope: " ++ str
+                        Nothing -> ERR 0 $ Notfound str ASSUME 
 
-
+        EQL (ERR n e) b -> err_handlr n e (EQL (ERR n e) b)
+        EQL b (ERR n e) -> err_handlr n e (EQL b (ERR n e))
         EQL (INT n1) (INT n2) -> BOOL $ n1 == n2
         EQL (STRING n1) (STRING n2) -> BOOL $! n1 == n2 
         EQL (BOOL n1) (BOOL n2) -> BOOL $! n1 == n2 
@@ -104,6 +127,12 @@ eval env expr =
 
         TYPE -> TYPE 
 
+        SUM (ERR n e) b -> err_handlr n e (SUM (ERR n e) b )
+        SUM b (ERR n e) -> err_handlr n e (SUM b (ERR n e) )
+        SUM a b -> SUM a b
+
         TAGGED str ex -> TAGGED str (eval env ex)
+
+        ERR n e -> err_handlr n e ASSUME
 
         e -> error $ "Eval case not written: " ++ (show e)

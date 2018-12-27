@@ -7,6 +7,10 @@ import Data.Int (Int64)
 
 type Environment = [ ( String , EXPR) ] 
 
+data Error =  Notfound String EXPR
+            | TypeErr EXPR EXPR EXPR
+                deriving (Eq, Show)
+
 data EXPR = 
               LET String EXPR EXPR 
             | ID String
@@ -32,6 +36,8 @@ data EXPR =
 
             | MAP EXPR EXPR
 
+            | ERR Int Error
+
             | CLOSURE (String, EXPR, Environment )  
             | BOOL Bool
             | TYPE_APP EXPR EXPR
@@ -51,43 +57,22 @@ data EXPR =
 
             deriving (Show, Eq )
 
-{-
-instance Eq EXPR where 
 
-    INT_ == INT_  = True 
+class ErrorHide a where
 
-    BOOL_ == BOOL_  = True 
-    BOOL_ == _     = False
+    (<%>) :: a -> a -> a
 
-    STRING_ == STRING_  = True 
-    STRING_ == _     = False
+instance ErrorHide EXPR where
 
-    INT_ == INT_  = True 
-    INT_ == _     = False
+    (ERR n e) <%> x = x
+    x <%> (ERR n e) = x
+    x <%> _ = x
 
-    TYPE == TYPE = True
-    TYPE == _    = False
+class ErrorShow a where 
+    (<->) :: a -> a -> a
 
-    ASSUME == ASSUME = True
-    ASSUME == _    = False
+instance ErrorShow EXPR where
 
-    ATOM str1 == ATOM str2 = str1 == str2
-
-    ID str1 == ID str2 = str1 == str2
-
-    BOOL v1 == BOOL v2 = v1 == v2
-
-    INT v1 == INT v2 = v1 == v2
-
-    STRING v1 == STRING v2 = v1 == v2
-
-    FUNC t1 t2 == FUNC t3 t4 = (t1 == t3) && (t2 == t4)  
-
-    PAIR t1 t2 == PAIR t3 t4 = (t1 == t3) && (t2 == t4)  
-
-    TYPE_APP e1 e2 == TYPE_APP e3 e4 = let first = (e1 == e3) in
-                                       if first then (e2 == e4) else False
-
-    _ == _ = False
-
--}
+    (ERR n e) <-> x = (ERR n e) 
+    x <-> (ERR n e) = (ERR n e) 
+    x <-> _ = x

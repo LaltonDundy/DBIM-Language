@@ -18,12 +18,50 @@ export let succ be
 
 in
 
-
 export let List be 
 
     \ a : TYPE ->
 
          @ END ? ( a , (List $ a ) )
+in
+
+export let vector be
+
+    \ a : TYPE -> 
+    \ n : Int -> 
+
+            | n is 0 ->     @ END
+            | elsewhere ->  (a , (vector $ a $ (n - 1) ) )
+
+in
+
+export let vectZip be
+
+    \ a : TYPE ->
+    \ b : TYPE ->
+    \ c : TYPE ->
+    \ binOP :  a => ( b => c ) ->
+    \ n  :  Int  ->
+    \ v1 :  ( vector $! a $! n ) ->
+    \ v2 :  ( vector $! b $! n ) ->
+
+    if ( n is 0 ) then @ END else (
+
+        let front be binOP $ (fst v1) $ (fst v2) in
+
+            | n is 1 -> ( front  , ( @ END ) )
+            | elsewhere ->
+
+                 (front , (vectZip $ a $ b $ c $ binOP $ (n - 1 ) $ (snd v1) $ (snd v2)))
+
+        )
+
+in
+
+export let vectAdd be
+
+    vectZip $ Int $ Int $ Int $ add
+
 in
 
 export let length be
@@ -39,6 +77,37 @@ in
 export let myLength be 
 
     length $ Int
+
+in
+
+export let listToVect be 
+
+    \ a : TYPE ->
+    \ lst : (List $! a) ->
+
+        let n be ( length $ a $ lst ) in
+
+        ( lst ) : ( vector $! a $! n ) 
+
+in
+
+export let myListToVect be
+
+    listToVect $ Int
+
+in
+
+export let double be 
+
+    \ lst : (List $! Int ) ->
+
+        vectAdd $ (length $ Int $ lst) $ lst $ lst
+
+in
+
+export let example be
+
+    double $ (1 , 2 , @ END )
 
 in
 
